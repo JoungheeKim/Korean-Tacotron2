@@ -1,0 +1,15 @@
+## option
+defaults:
+  - base: taco2
+
+base:
+  train_script: data/KSS_sample/train.txt
+  val_script: data/KSS_sample/dev.txt
+  save_path: results/kss_sample
+  gradient_accumulation_steps: 1
+  train_batch_size: 2
+  warmup_steps: 4000
+  normalize_option: NFKD
+  generator_path: checkpoints_g/vocgan_kss_pretrained_model_epoch_4500.pt
+  num_train_epochs: 4000
+  steps_per_evaluate: 10
