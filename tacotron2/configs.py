@@ -74,7 +74,7 @@ class Tacotron2Config(DefaultConfig):
     encoder_dropout_p: float = 0.5
     encoder_kernel_size: int = 5
     encoder_batch_norm_decay: float = 0.999
-    encoder_lstm_dim: int = 1024
+    encoder_lstm_dim: int = 512
     encoder_n_convolutions: int = 3
     encoder_activation: str = "relu"
 
@@ -104,6 +104,9 @@ class Tacotron2Config(DefaultConfig):
     postnet_kernel_size: int = 5
     postnet_n_convolutions: int = 5
     postnet_dropout_p: float = 0.5
+    
+    ## loss
+    loss_masking: bool = True
 
     
 

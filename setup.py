@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 packages = find_packages()
 requirements = [
     "torch",
-    "torchaudio>=0.10.0"
+    "torchaudio>=0.9.1"
 ]
 
 VERSION = {}  # type: ignore

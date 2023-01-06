@@ -1,9 +1,9 @@
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=1
 
 ## 2. KSS Dataset   
 ## set your data generator path and save path(examples are below:)
 GENERATOR_PATH=/home/x1113228/personal/gitRepo/data/tacotron2/checkpoints/kss_29de09d_4500.pt
-SAVE_PATH=results/kss_ver1
+SAVE_PATH=results/kss_ver2
 
 ## train kss non-attentive tacotron
 ## check config options in [configs/train_kss.yaml]

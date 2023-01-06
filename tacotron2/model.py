@@ -48,11 +48,12 @@ class Tacotron2(nn.Module):
 
         self.cfg = cfg
         self.sampling_rate = cfg.sampling_rate
+        self.loss_masking = cfg.loss_masking
 
         ## loss params
-        self.mse = nn.MSELoss(reduction='none')
-        self.mae = nn.L1Loss(reduction='none')
-        self.bce = nn.BCEWithLogitsLoss(reduction='none')
+        self.mse = nn.MSELoss()
+        self.mae = nn.L1Loss()
+        self.bce = nn.BCEWithLogitsLoss()
         logging.info('build tacotron2 model')
 
 
@@ -119,39 +120,41 @@ class Tacotron2(nn.Module):
         N = mel_outputs.size(1) ## n_mel_channels
         max_len = mel_lengths.max()
         ids = torch.arange(max_len, device=mel_lengths.device).expand(B, N, max_len)
-        mel_mask = (ids < mel_lengths.view(B, 1, 1)).transpose(1, 2).float()
-        non_zero_elements = mel_mask.sum()
-
+        mel_mask = ~(ids < mel_lengths.view(B, 1, 1)).transpose(1, 2).bool()
+        
         ## 1. + 2. mel
-        predicted_mse = self.mse(mel_outputs.transpose(1, 2), mel_specs.transpose(1, 2))
-        predicted_mse = (predicted_mse * mel_mask).sum() / non_zero_elements
+        pred = mel_outputs.transpose(1, 2)
+        post_pred = mel_outputs_postnet.transpose(1, 2)
+        label = mel_specs.transpose(1, 2)
+        if self.loss_masking:
+            pred.data.masked_fill_(mel_mask, 0.0)
+            post_pred.data.masked_fill_(mel_mask, 0.0)
+        
+        predicted_mse = self.mse(pred, label)
         predicted_mse = torch.nan_to_num(predicted_mse)
 
-        predicted_mae = self.mae(mel_outputs.transpose(1, 2), mel_specs.transpose(1, 2))
-        predicted_mae = (predicted_mae * mel_mask).sum() / non_zero_elements
+        predicted_mae = self.mae(pred, label)
         predicted_mae = torch.nan_to_num(predicted_mae)
 
         ## 3. + 4. postnet mel
-        predicted_postnet_mse = self.mse(mel_outputs_postnet.transpose(1, 2), mel_specs.transpose(1, 2))
-        predicted_postnet_mse = (predicted_postnet_mse * mel_mask).sum() / non_zero_elements
+        predicted_postnet_mse = self.mse(post_pred, label)
         predicted_postnet_mse = torch.nan_to_num(predicted_postnet_mse)
 
-        predicted_postnet_mae = self.mae(mel_outputs_postnet.transpose(1, 2), mel_specs.transpose(1, 2))
-        predicted_postnet_mae = (predicted_postnet_mae * mel_mask).sum() / non_zero_elements
+        predicted_postnet_mae = self.mae(post_pred, label)
         predicted_postnet_mae = torch.nan_to_num(predicted_postnet_mae)
-
 
         ## 5. gate
         g_ids = torch.arange(max_len, device=mel_lengths.device).expand(B, max_len)
-        gate_mask = (g_ids < mel_lengths.view(B, 1)).float()
-        non_zero_gates = gate_mask.sum()
-
+        gate_mask = ~(g_ids < mel_lengths.view(B, 1)).bool()
+        gate_pred = gate_outputs
+        if self.loss_masking:
+            gate_pred.data.masked_fill_(gate_mask, 1e3)
+            
+        
         predicted_gate_bce = self.bce(gate_outputs, gate_targets)
-        predicted_gate_bce = (predicted_gate_bce * gate_mask).sum() / non_zero_gates
         predicted_gate_bce = torch.nan_to_num(predicted_gate_bce)
 
         loss = predicted_mse + predicted_mae + predicted_postnet_mse + predicted_postnet_mae + predicted_gate_bce
-        # loss = predicted_mse + predicted_postnet_mse + predicted_gate_bce
         return { 
             'loss':loss,
             'predicted_mse':predicted_mse,

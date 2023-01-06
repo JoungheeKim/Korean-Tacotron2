@@ -202,11 +202,11 @@ class TGTDataset(TextMelDataset):
             if diff > 0:
                 collated_mel_specs[i, :, :target_mel_size] = mel_spec[:, :target_mel_size]
                 #mel_length = target_mel_size
-                collated_gate_targets[i, target_mel_size-1] = 1.0
+                ccollated_gate_targets[i, target_mel_size-1:] = 1.0
 
             else:
                 collated_mel_specs[i, :, :mel_length] = mel_spec
-                collated_gate_targets[i, mel_length-1] = 1.0
+                collated_gate_targets[i, mel_length-1:] = 1.0
 
 
         text_lengths = [len(text_id) for text_id in text_ids]
